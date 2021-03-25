@@ -1,4 +1,5 @@
-#PRACTICA 2 MySQL - SINF
+# PRACTICA 2 MySQL
+
 Entramos en MySQL:
 
 > sudo mysql -u usuarioROOT -p
@@ -17,5 +18,6 @@ El fichero `DLL.sql` se emplea para modelar el esquema de las bases de datos.
 Los ficheros `gran.sql` y `peq.sql`tienen el código que genera el esquema e inserta datos en una base de datos grande y pequeña, respectivamente.
 Las consultas del ejercicio 10 están ubicadas en dichos ficheros. Para ejecutarlos:
 > \\. peq.sql
+
 > \\. gran.sql
 
