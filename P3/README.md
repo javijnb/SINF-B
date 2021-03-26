@@ -1,0 +1,2 @@
+Todas las declaraciones de variables dentro de un procedure (o del propio script SQL) deben estar situadas al principio de todo el código, si no da error.
+Todas las declaraciones de cursores han de estar ubicadas después de las de las variables

@@ -21,3 +21,6 @@ Las consultas del ejercicio 10 están ubicadas en dichos ficheros. Para ejecutar
 
 > \\. gran.sql
 
+En la consulta 4, con el LEFT JOIN nos aseguramos que si un docente no está en un departamento, que aparezca igualmente (esto se debe buscar en función de si lo contempla el modelo)
+El comando `SELECT DISTINCT(atributo)` permite eliminar tuplas que tengan duplicado dicho atributo. Lo correcto sería usar un UNION pero bueno ;)
+El comando `UNION ALL` consiste en fusionar dos tablas que compartan sus atributos y obtener otra relación con todas las tuplas posibles y el mismo número de atributos de las tablas originales.
