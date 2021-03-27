@@ -87,10 +87,58 @@ ORDER BY contador DESC
 LIMIT 1;
 
 
+
+
+
 -- 14. Para cada materia, encontrar todos los grupos que estén al máximo de alumnos, mostrando dicho número y con una consulta anidada
+SELECT S1.id_materia, S1.id_grupo, S1.cuenta AS maximo
+FROM(
+    SELECT cursa.id_materia, cursa.id_grupo, COUNT(*) AS cuenta FROM cursa
+    GROUP BY cursa.id_materia, cursa.id_grupo
+    ORDER BY cursa.id_materia
+)S1
+-- Queremos sacar por pantalla los campos id_materia, id_grupo y el contaje de alumnos del grupo de la relación cursa (S1)
+-- El campo S1.cuenta (alias maximo) nos indica el número de alumnos en un grupo
+-- Realizamos la query junto al JOIN. El JOIN consiste en una consulta que consigue el número máximo de los alumnos de cualquier grupo
+INNER JOIN(
+    SELECT id_materia, MAX(cuenta) AS maxim
+    FROM(
+        SELECT cursa.id_materia, cursa.id_grupo, COUNT(*) AS cuenta FROM cursa
+        GROUP BY cursa.id_materia, cursa.id_grupo
+        ORDER BY cursa.id_materia
+    )AS contarAlumnos
+
+    GROUP BY id_materia
+)S2 ON S2.id_materia = S1.id_materia AND S2.maxim = S1.cuenta ORDER BY maximo DESC;
+-- Ahora comparamos las materias de ambas consultas (S2.id_materia = S1.id_materia) y que
+-- el campo máximo coincida con el número de alumnos del grupo que ha triggereado dicho valor máximo
 
 
--- 15. Apartado anterior pero mostrando los resultados ordenados de mayor a menos número de alumnos
+
+
+
+
+-- 15. Apartado anterior pero mostrando los resultados ordenados de mayor a menor número de alumnos
+SELECT S1.id_materia, S1.id_grupo, S1.cuenta AS maximo
+FROM(
+    SELECT cursa.id_materia, cursa.id_grupo, COUNT(*) AS cuenta FROM cursa
+    GROUP BY cursa.id_materia, cursa.id_grupo
+    ORDER BY cursa.id_materia
+)S1
+
+INNER JOIN(
+    SELECT id_materia, MAX(cuenta) AS maxim
+    FROM(
+        SELECT cursa.id_materia, cursa.id_grupo, COUNT(*) AS cuenta FROM cursa
+        GROUP BY cursa.id_materia, cursa.id_grupo
+        ORDER BY cursa.id_materia
+    )AS contarAlumnos
+
+    GROUP BY id_materia
+)S2 ON S2.id_materia = S1.id_materia AND S2.maxim = S1.cuenta ORDER BY maximo ASC;
+
+
+
 
 
 -- 16. Mostrar los 10 grupos con más alumnos matriculados junto al nombre de la asignatura
