@@ -18,6 +18,7 @@ DROP PROCEDURE IF EXISTS peliculasPorNacionalidad;
 DROP PROCEDURE IF EXISTS ponerEnMayusculas;
 DROP PROCEDURE IF EXISTS contar_directores2;
 DROP PROCEDURE IF EXISTS extraer_imbds;
+DROP PROCEDURE IF EXISTS introducir_pelicula;
 
 CREATE TABLE Peliculas(
     id_pelicula INT, 
@@ -221,133 +222,171 @@ CALL contar_directores2();
 
 
 -- EJERCICIO 8:
--- PRIMERO SOLO SE HARÁ CON PELICULAS
+-- Crea una relación con todas las Peliculas, Actores y Directores con esa nacionalidad
+-- Primero solo buscará en Peliculas y las inserta, y luego igual con Actores y Directores
 DELIMITER //
 CREATE PROCEDURE extraer_imbds(IN nacionalidadIN VARCHAR(100))
 BEGIN
 
-    CREATE TABLE IF NOT EXISTS tablaAuxiliar(
-        id_tabla INT NOT NULL AUTO_INCREMENT,
-        id_imbd INT,
-        nombre VARCHAR(100),
-        PRIMARY KEY(id_tabla)
-    );
+    -- Variable que va a contener el valor del puntero cada vez que encuentre una tupla válida
+    DECLARE AuxPeliculas INT;
+    DECLARE AuxActores INT;
+    DECLARE AuxDirectores INT;
 
-    -- SELECT * FROM Peliculas  WHERE Peliculas.nacionalidad  = nacionalidadIN;
-    INSERT INTO tablaAuxiliar(id_imbd, nombre) VALUES
-        (765, "Nombre de prueba"); 
-    SELECT * FROM tablaAuxiliar;
-    ALTER TABLE tablaAuxiliar RENAME @nacionalidadIN;
-    
+    -- Cursor para iterar en la query de peliculas que tienen la nacionalidad = input
+    DECLARE finished BOOLEAN DEFAULT false;
+    DECLARE cursorPeliculas CURSOR FOR SELECT Peliculas.id_pelicula FROM Peliculas WHERE Peliculas.nacionalidad = nacionalidadIN;
+    DECLARE cursorActores   CURSOR FOR SELECT Actores.id_actor      FROM Actores   WHERE Actores.nacionalidad   = nacionalidadIN;
+    DECLARE cursorDirectores CURSOR FOR SELECT Directores.id_director FROM Directores WHERE Directores.nacionalidad = nacionalidadIN;
+
+    -- Creamos los comandos de forma dinámica en función de la nacionalidad introducida (las instrucciones por defecto son atómicas)
+    SET @comandoDropTable   = CONCAT("DROP TABLE IF EXISTS ", nacionalidadIN, ";");
+    SET @comandoCreateTable = CONCAT("CREATE TABLE ", nacionalidadIN, " (IMBD INT);");
+
+    -- Inicializamos
+    SET AuxPeliculas = 0;
+    SET AuxActores   = 0;
+    SET AuxDirectores = 0;
+
+    -- Eliminamos si existía ya una tabla con ese nombre (nacionalidad introducida) y luego la creamos
+    PREPARE stmt_dropTable FROM @comandoDropTable;
+    EXECUTE stmt_dropTable;
+
+    PREPARE stmt_createTable FROM @comandoCreateTable;
+    EXECUTE stmt_createTable;
+
+    -- Comenzamos a iterar Peliculas
+    OPEN cursorPeliculas;
+    BEGIN   
+        -- Cada vez que entramos tenemos que ponerlo a false
+        DECLARE finished BOOLEAN DEFAULT false;
+        DECLARE CONTINUE HANDLER FOR NOT FOUND SET finished = true;
+
+        -- Bucle de Peliculas
+        buclePeliculas: LOOP
+
+            -- Cada vez que encuentre el cursor una tupla válida, la metemos en la variable
+            FETCH cursorPeliculas INTO AuxPeliculas;
+            IF finished THEN 
+                LEAVE buclePeliculas;
+            ELSE
+                -- Si quedan más por buscar, preparamos el comando para añadir dicho valor a la tabla
+                SET @addValue = CONCAT("INSERT ", nacionalidadIN, " VALUES(", AuxPeliculas,");");
+                PREPARE stmt_addValuePeliculas FROM @addValue;
+                EXECUTE stmt_addValuePeliculas;
+            END IF;
+        END LOOP buclePeliculas;
+    END;
+    CLOSE cursorPeliculas;
+
+    -- Comenzamos a iterar Actores
+    OPEN cursorActores;
+    BEGIN   
+        DECLARE finished BOOLEAN DEFAULT false;
+        DECLARE CONTINUE HANDLER FOR NOT FOUND SET finished = true;
+
+        bucleActores: LOOP
+
+            FETCH cursorActores INTO AuxActores;
+            IF finished THEN 
+                LEAVE bucleActores;
+            ELSE
+                SET @addValue = CONCAT("INSERT ", nacionalidadIN, " VALUES(", AuxActores,");");
+                PREPARE stmt_addValueActores FROM @addValue;
+                EXECUTE stmt_addValueActores;
+            END IF;
+        END LOOP bucleActores;
+
+    END;
+    CLOSE cursorActores;
+
+    -- Comenzamos a iterar Directores
+    OPEN cursorDirectores;
+    BEGIN   
+        DECLARE finished BOOLEAN DEFAULT false;
+        DECLARE CONTINUE HANDLER FOR NOT FOUND SET finished = true;
+
+        bucleDirectores: LOOP
+
+            FETCH cursorDirectores INTO AuxDirectores;
+            IF finished THEN 
+                LEAVE bucleDirectores;
+            ELSE
+                SET @addValue = CONCAT("INSERT ", nacionalidadIN, " VALUES(", AuxDirectores,");");
+                PREPARE stmt_addValueDirectores FROM @addValue;
+                EXECUTE stmt_addValueDirectores;
+            END IF;
+        END LOOP bucleDirectores;
+        
+    END;
+    CLOSE cursorDirectores;
+
 
 END //
 DELIMITER ;
 
 CALL extraer_imbds("USA");
+SELECT * FROM USA;
 
 
+-- EJERCICIO 9 y 10
+DELIMITER //
+CREATE PROCEDURE introducir_pelicula(IN id_peliculaIN INT, IN tituloIN VARCHAR(100), IN id_directorIN INT, IN nacionalidadIN VARCHAR(100))
+BEGIN
+
+    START TRANSACTION;
+        INSERT Peliculas VALUE(id_peliculaIN, tituloIN, id_directorIN, nacionalidadIN);
+    COMMIT;
+
+END //
+DELIMITER ;
+
+-- CALL introducir_pelicula(77777, "Star Wars: The empire strikes back", 184, "USA");
+-- SELECT * FROM Peliculas;
+
+-- EJERCICIO 11
+DELIMITER //
+DROP TRIGGER IF EXISTS disparadorEliminarDirectores//
+CREATE TRIGGER disparadorEliminarDirectores BEFORE DELETE ON Directores FOR EACH ROW
+BEGIN
+    -- Variables para poder efectuar los chequeos y la eliminación del elemento de la tabla de su nacionalidad
+    DECLARE nacionalidadAux VARCHAR(100);
+    DECLARE id_directorAux INT;
+
+    -- Conseguimos la nacionalidad para saber buscar en la tabla
+    SELECT Directores.nacionalidad INTO nacionalidadAux FROM Directores WHERE Directores.id_director = old.id_director;
+    -- Conseguimos el IMBD del elemento para saber cual eliminar
+    SELECT Directores.id_director INTO id_directorAux FROM Directores WHERE Directores.id_director = old.id_director;
+
+    IF(nacionalidadAux="USA") THEN
+        DELETE FROM USA WHERE USA.IMBD = id_directorAux;
+    END IF;
+
+END //
+DELIMITER ;
+
+DELIMITER //
+DROP TRIGGER IF EXISTS disparadorInsertarDirectores//
+CREATE TRIGGER disparadorInsertarDirectores BEFORE INSERT ON Directores FOR EACH ROW
+BEGIN
+    DECLARE nacionalidadAux VARCHAR(100);
+    DECLARE id_directorAux INT;
+
+    SELECT Directores.nacionalidad INTO nacionalidadAux FROM Directores WHERE Directores.id_director = new.id_director;
+    SELECT Directores.id_director  INTO id_directorAux  FROM Directores WHERE Directores.id_director = new.id_director;
+
+    IF(nacionalidadAux="USA") THEN
+        INSERT USA VALUE(id_directorAux);
+    END IF;
+
+END //
+DELIMITER ;
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-SELECT * FROM Actores;
+INSERT INTO Peliculas(id_pelicula, titulo, id_director, nacionalidad) VALUES(33333, "Titulo de prueba", 200, "España");
+INSERT INTO Directores(id_director, edad, nombre, nacionalidad) VALUE(200, 66, "James Cameron", "USA");
 SELECT * FROM Directores;
-SELECT 'Cartelera';
-SELECT * FROM Peliculas; 
-
-SELECT 'Directores junto a sus peliculas';
-
-SELECT Peliculas.id_director, Directores.nombre, Peliculas.titulo  
-FROM Peliculas INNER JOIN Directores 
-ON Peliculas.id_director = Directores.id_director 
-ORDER BY Directores.id_director;
-
-SELECT 'Reparto de las películas (por nombre)';
-
-SELECT Peliculas.titulo, Actores.nombre, ActoresPeliculas.id_actor, ActoresPeliculas.id_pelicula
-FROM Actores 
-INNER JOIN ActoresPeliculas ON Actores.id_actor=ActoresPeliculas.id_actor
-INNER JOIN Peliculas ON Peliculas.id_pelicula=ActoresPeliculas.id_pelicula
-ORDER BY Peliculas.titulo;
-
-SELECT 'Reparto de las películas (por actores)';
-
-SELECT Actores.nombre, Peliculas.titulo, ActoresPeliculas.id_actor, ActoresPeliculas.id_pelicula
-FROM Actores 
-INNER JOIN ActoresPeliculas ON Actores.id_actor=ActoresPeliculas.id_actor
-INNER JOIN Peliculas ON Peliculas.id_pelicula=ActoresPeliculas.id_pelicula
-ORDER BY Actores.nombre;
-
-
-
-EJERCICIO 8
-SELECT 'Todos los actores';
-SELECT * FROM Actores;
-
-SELECT 'Todos los actores de STAR WARS';
-SELECT Actores.nombre, Peliculas.titulo
-FROM Actores
-JOIN ActoresPeliculas ON Actores.id_actor=ActoresPeliculas.id_actor
-JOIN Peliculas        ON Peliculas.id_pelicula=ActoresPeliculas.id_pelicula
-WHERE Peliculas.titulo='Star Wars: A new hope'
-ORDER BY Actores.nombre;
-
-SELECT 'Actores de más de 50 años';
-SELECT * FROM Actores WHERE edad>50 ORDER BY Actores.edad;
-
-SELECT 'Numero de peliculas de cada director';
-SELECT Directores.nombre, COUNT(Peliculas.titulo) AS NumeroDePelis FROM Peliculas
-JOIN Directores ON Directores.id_director = Peliculas.id_director
-GROUP BY Directores.nombre
-ORDER BY Directores.nombre;
-
-SELECT 'Actores que no actuan';
-SELECT * FROM Actores WHERE id_actor NOT IN (
-	SELECT ActoresPeliculas.id_actor FROM ActoresPeliculas);
-
-SELECT 'Todos los directores de las películas de un actor dado';
-SELECT DISTINCT Actores.nombre, Directores.nombre, Directores.id_director
-FROM Actores 
-INNER JOIN ActoresPeliculas ON Actores.id_actor=ActoresPeliculas.id_actor
-INNER JOIN Peliculas ON Peliculas.id_pelicula=ActoresPeliculas.id_pelicula
-INNER JOIN Directores ON Peliculas.id_director=Directores.id_director
-WHERE Actores.nombre='Matt Damon'
-ORDER BY Directores.nombre;
-*/
-
-
-
+SELECT * FROM USA;
+-- DELETE FROM Directores WHERE id_director=200;
+-- SELECT * FROM USA ;
 
