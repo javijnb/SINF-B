@@ -347,7 +347,7 @@ DELIMITER ;
 -- EJERCICIO 11
 DELIMITER //
 DROP TRIGGER IF EXISTS disparadorEliminarDirectores//
-CREATE TRIGGER disparadorEliminarDirectores BEFORE DELETE ON Directores FOR EACH ROW
+CREATE TRIGGER disparadorEliminarDirectores AFTER DELETE ON Directores FOR EACH ROW
 BEGIN
     -- Variables para poder efectuar los chequeos y la eliminación del elemento de la tabla de su nacionalidad
     DECLARE nacionalidadAux VARCHAR(100);
@@ -367,7 +367,7 @@ DELIMITER ;
 
 DELIMITER //
 DROP TRIGGER IF EXISTS disparadorInsertarDirectores//
-CREATE TRIGGER disparadorInsertarDirectores BEFORE INSERT ON Directores FOR EACH ROW
+CREATE TRIGGER disparadorInsertarDirectores AFTER INSERT ON Directores FOR EACH ROW
 BEGIN
     DECLARE nacionalidadAux VARCHAR(100);
     DECLARE id_directorAux INT;
@@ -375,8 +375,8 @@ BEGIN
     SELECT Directores.nacionalidad INTO nacionalidadAux FROM Directores WHERE Directores.id_director = new.id_director;
     SELECT Directores.id_director  INTO id_directorAux  FROM Directores WHERE Directores.id_director = new.id_director;
 
-    IF(nacionalidadAux="USA") THEN
-        INSERT USA VALUE(id_directorAux);
+    IF(nacionalidadAux='USA') THEN
+        INSERT INTO USA(IMBD) VALUES (id_directorAux);
     END IF;
 
 END //

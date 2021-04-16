@@ -4,13 +4,13 @@ Todos los ejericios de la práctica 3 están en el fichero `InsertPeliculas.sql`
 
 Todas las declaraciones de variables dentro de un procedure (o del propio script SQL) deben estar situadas al principio de todo el código, si no da error
 
-***CURSORES***
+*** CURSORES ***
 
 Todas las declaraciones de cursores han de estar ubicadas después de las de las variables y asociadas a un SELECT
 
 Toda la explicación del funcionamiento del código de cursores está comentada en el ejericio 8 en el fichero
 
-***TRANSACCIONES***
+*** TRANSACCIONES ***
 
 Para indicar a MySQL que gestionaremos nosotros manualmente las transacciones indicamos por terminal:
 
@@ -27,7 +27,7 @@ Para llamar al procedimiento almacenado de la transacción:
 
 Esta operación permite introducir directores incluso que no estén listados - debería corregirlo :( 
 
-***DISPARADORES*** 
+*** DISPARADORES *** 
 
 Procedimientos almacenados que se ejecutan antes o después de un evento de inserción, modificación o eliminación de un elemento. Sobrecarga el SGBD.
 Obviamente solo podemos ver sus efectos y no verlo en acción ni invocarlos de forma directa.
@@ -44,3 +44,5 @@ En los disparadores se juegan con las palabras reservadas `.old` y `.new`
 - Modificación: se pueden acceder a ambos campos e incluso compararlos
 
 - Borrado: únicamente se puede acceder al valor `.old` ya que el campo `.new` después de que la operación suceda
+
+Cuidado con los TRIGGERS: No se puede acceder en primer lugar a los campos new y old sin haber insertado (o eliminado) dicho valor nuevo o antiguo. Si estamos buscando el id_director para jugar con él más adelante, primero lo insertamos (TRIGGER AFTER INSERT) y después podemos acceder al campo y ecribir código.
