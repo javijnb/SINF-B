@@ -43,5 +43,5 @@ Llamar al fichero `permisos.sql` para cargar dos nuevos usuarios que puedan oper
 
 ## ÍNDICES
 
-LOs índices se usan para encontrar filas con un valor de columna esperado de forma rápida. Sin un indice, MySQL debe empezar por la primera fila y leer todas las entradas de la tabla para ver sus coincidencias, de la otra manera el gestor puede determinar la posición a buscar rápidamente sin tener que inspeccionar todas las tuplas.
+Los índices se usan para encontrar filas con un valor de columna esperado de forma rápida. Sin un indice, MySQL debe empezar por la primera fila y leer todas las entradas de la tabla para ver sus coincidencias, de la otra manera el gestor puede determinar la posición a buscar rápidamente sin tener que inspeccionar todas las tuplas.
 
